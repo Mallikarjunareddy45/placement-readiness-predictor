@@ -1,0 +1,108 @@
+/* ── Collapsible Sidebar Glassmorphic Styles ── */
+.collapsible-sidebar {
+  position: relative;
+  background: rgba(18, 18, 26, 0.3);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  height: calc(100vh - 64px); /* Under the top sticky navbar */
+  display: flex;
+  flex-direction: column;
+  padding: 16px 8px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 14px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: var(--transition);
+  z-index: 100;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+}
+
+.sidebar-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar for menu list */
+.sidebar-menu-list::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.sidebar-menu-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+}
+
+.sidebar-menu-row--active {
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.sidebar-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.sidebar-row-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sidebar-footer-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 10px 0;
+}
+
+.logout-row {
+  color: var(--accent-red);
+}
+
+.logout-row:hover {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+@media (max-width: 900px) {
+  .collapsible-sidebar {
+    display: none; /* Hide on mobile - mobile nav is handled in top Navbar */
+  }
+}

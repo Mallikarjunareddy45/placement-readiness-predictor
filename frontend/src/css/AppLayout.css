@@ -1,0 +1,33 @@
+/* ── Unified Layout Shell Styles ── */
+.dash-layout-topnav {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.dash-body-container {
+  display: flex;
+  min-height: calc(100vh - 64px);
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.dash-main-feed-scroll {
+  flex-grow: 1;
+  overflow-y: auto;
+  height: calc(100vh - 64px);
+  padding: 40px 24px;
+  box-sizing: border-box;
+}
+
+.dash-main-feed-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.dash-main-feed-scroll::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+.dash-main-feed-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
