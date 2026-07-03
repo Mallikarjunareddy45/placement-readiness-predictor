@@ -10,9 +10,15 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const savedToken   = localStorage.getItem('prp_token')
     const savedStudent = localStorage.getItem('prp_student')
-    if (savedToken && savedStudent) {
-      setToken(savedToken)
-      setStudent(JSON.parse(savedStudent))
+    try {
+      if (savedToken && savedStudent && savedStudent !== 'undefined') {
+        setToken(savedToken)
+        setStudent(JSON.parse(savedStudent))
+      }
+    } catch (e) {
+      console.error("Failed to parse saved student session:", e)
+      localStorage.removeItem('prp_token')
+      localStorage.removeItem('prp_student')
     }
     setLoading(false)
   }, [])
