@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   getActiveAssessmentAPI,
+  startAssessmentAPI,
   getAssessmentQuestionsAPI,
   runCodingCodeAPI,
   submitAssessmentQuestionAPI,
@@ -147,7 +148,7 @@ export default function Coding() {
     setLoading(true)
     setError('')
     try {
-      const res = await getActiveAssessmentAPI() // Generates assessment
+      const res = await startAssessmentAPI() // Mutates and starts assessment attempt
       if (res.data?.success) {
         setActiveAttempt(res.data)
         setTimeLeft(res.data.time_left)

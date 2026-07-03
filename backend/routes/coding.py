@@ -980,16 +980,54 @@ def get_active_assessment():
             "question_ids": [int(x) for x in active.question_ids.split(",") if x]
         }), 200
 
-    # 2. No active assessment. Verify resume uploaded
+    # 2. No active assessment. Return active: False
+    resume = ResumeAnalysis.query.filter_by(student_id=student_id).order_by(ResumeAnalysis.created_at.desc()).first()
+    return jsonify({
+        "success": True,
+        "active": False,
+        "no_resume": resume is None
+    }), 200
+
+
+# ─────────────────────────────────────────
+# POST /api/coding/assessment/start
+# ─────────────────────────────────────────
+@coding_bp.route("/assessment/start", methods=["POST"])
+def start_assessment():
+    student_id, error = verify_token(request)
+    if error:
+        return jsonify({"success": False, "message": error}), 401
+
+    import random
+    from datetime import datetime
+
+    # Check for active assessment in progress
+    active = ActiveAssessment.query.filter_by(
+        student_id=student_id,
+        is_completed=False
+    ).first()
+
+    if active:
+        seconds_elapsed = (datetime.utcnow() - active.started_at).total_seconds()
+        time_left = max(0, int(active.duration_secs - seconds_elapsed))
+        return jsonify({
+            "success": True,
+            "active": True,
+            "time_left": time_left,
+            "started_at": active.started_at.isoformat(),
+            "question_ids": [int(x) for x in active.question_ids.split(",") if x]
+        }), 200
+
+    # Verify resume uploaded
     resume = ResumeAnalysis.query.filter_by(student_id=student_id).order_by(ResumeAnalysis.created_at.desc()).first()
     if not resume:
         return jsonify({
             "success": False,
             "no_resume": True,
             "message": "Resume upload required to compile adaptive assessments."
-        }), 200
+        }), 400
 
-    # 3. Extract skills matching categories
+    # Extract skills matching categories
     detected = (resume.detected_skills or "").lower()
     skills = []
     if "python" in detected: skills.append("Python")

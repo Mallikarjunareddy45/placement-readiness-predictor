@@ -10,8 +10,12 @@ API.interceptors.request.use(config => {
 })
 
 // Auth
-export const registerAPI  = (data) => API.post('/auth/register', data)
-export const loginAPI     = (data) => API.post('/auth/login', data)
+export const registerAPI      = (data) => API.post('/auth/register', data)
+export const loginAPI         = (data) => API.post('/auth/login', data)
+export const socialLoginAPI   = (data) => API.post('/auth/social-login', data)
+export const forgotPasswordAPI = (data) => API.post('/auth/forgot-password', data)
+export const verifyOtpAPI     = (data) => API.post('/auth/verify-otp', data)
+export const resetPasswordAPI = (data) => API.post('/auth/reset-password', data)
 
 // Profile
 export const getProfileAPI    = ()     => API.get('/profile/me')
@@ -51,6 +55,7 @@ export const getCodingProblemsAPI = ()         => API.get('/coding/problems')
 export const runCodingCodeAPI     = (data)     => API.post('/coding/run', data)
 export const submitCodingCodeAPI  = (data)     => API.post('/coding/submit', data)
 export const getActiveAssessmentAPI = ()       => API.get('/coding/assessment/active')
+export const startAssessmentAPI      = ()       => API.post('/coding/assessment/start')
 export const getAssessmentQuestionsAPI = ()    => API.get('/coding/assessment/questions')
 export const submitAssessmentQuestionAPI = (data) => API.post('/coding/assessment/submit', data)
 export const completeAssessmentAPI = ()        => API.post('/coding/assessment/complete')
