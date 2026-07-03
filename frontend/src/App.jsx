@@ -30,6 +30,7 @@ function App() {
           <Route path="/resume" element={<Resume />} />
           <Route path="/coding" element={<Coding />} />
           <Route path="/interview" element={<MockInterview />} />
+          <Route path="/ai-interview" element={<MockInterview />} />
           <Route path="/predict" element={<Prediction />} />
         </Route>
 
