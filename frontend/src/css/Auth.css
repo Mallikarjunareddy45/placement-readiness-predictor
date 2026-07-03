@@ -423,10 +423,14 @@
   padding: 0;
   display: flex;
   align-items: center;
+  z-index: 10;
+  transform: translateZ(12px);
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .password-toggle-btn:hover {
   color: var(--accent-cyan);
+  transform: translateZ(14px) scale(1.1);
 }
 
 /* Social buttons inline row */

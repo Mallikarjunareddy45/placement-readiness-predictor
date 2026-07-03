@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { getAptCategoriesAPI, startAptTestAPI, submitAptTestAPI, getAptHistoryAPI, getAptProgressAPI } from '../services/api'
-// Removed local sidebar import
+import { 
+  getAptCategoriesAPI, 
+  startAptTestAPI, 
+  submitAptTestAPI, 
+  getAptHistoryAPI, 
+  getAptProgressAPI,
+  getAptitudeLeaderboardAPI
+} from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import './Aptitude.css'
 
@@ -9,6 +15,7 @@ export default function Aptitude() {
   const [categories, setCategories] = useState([])
   const [history, setHistory] = useState([])
   const [progress, setProgress] = useState(null)
+  const [leaderboard, setLeaderboard] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -58,6 +65,9 @@ export default function Aptitude() {
 
       const progRes = await getAptProgressAPI()
       setProgress(progRes.data)
+
+      const leadRes = await getAptitudeLeaderboardAPI()
+      setLeaderboard(leadRes.data.leaderboard)
     } catch (err) {
       setError('Could not load aptitude data.')
     } finally {
@@ -152,15 +162,6 @@ export default function Aptitude() {
 
   if (loading && !activeTest) return <div className="page-loading"><div className="dash-loading-spinner" /></div>
 
-  // Mock Leaderboard details
-  const leaderboard = [
-    { rank: 1, name: "Ananya Sharma", score: 95, branch: "Computer Science" },
-    { rank: 2, name: "Rohit Kumar", score: 90, branch: "Information Technology" },
-    { rank: 3, name: "Priya Nair", score: 88, branch: "AI & Data Science" },
-    { rank: 4, name: "Vikram Malhotra", score: 85, branch: "Electronics" },
-    { rank: 5, name: student?.name || "You", score: progress?.overall_aptitude_score || 0, branch: "Student", isUser: true }
-  ].sort((a,b) => b.score - a.score).map((x, idx) => ({ ...x, rank: idx + 1 }))
-
   return (
     <div className="aptitude-page fade-in">
           
@@ -215,16 +216,22 @@ export default function Aptitude() {
                 <div className="card leaderboard-card">
                   <h3 className="leaderboard-card-title">🏆 Aptitude Leaderboard</h3>
                   <div className="leaderboard-list">
-                    {leaderboard.map(u => (
-                      <div key={u.rank} className={`leaderboard-item ${u.isUser ? 'leaderboard-item--user' : ''}`}>
-                        <span className="leaderboard-rank">{u.rank}</span>
-                        <div className="leaderboard-details">
-                          <span className="leaderboard-name">{u.name}</span>
-                          <span className="leaderboard-branch">{u.branch}</span>
-                        </div>
-                        <span className="leaderboard-score">{u.score}%</span>
+                    {leaderboard.length === 0 ? (
+                      <div className="leaderboard-empty-state" style={{ color: 'var(--text-secondary)', padding: '20px 0', textAlign: 'center', fontSize: 13, lineHeight: '1.6' }}>
+                        No students have completed the aptitude test yet. Be the first to take the test and claim Rank #1!
                       </div>
-                    ))}
+                    ) : (
+                      leaderboard.map(u => (
+                        <div key={u.rank} className={`leaderboard-item ${u.isUser ? 'leaderboard-item--user' : ''}`}>
+                          <span className="leaderboard-rank">{u.rank}</span>
+                          <div className="leaderboard-details">
+                            <span className="leaderboard-name">{u.name}</span>
+                            <span className="leaderboard-branch">{u.branch}</span>
+                          </div>
+                          <span className="leaderboard-score">{u.score}%</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -252,99 +259,100 @@ export default function Aptitude() {
                 />
               </div>
 
-              {activeTest.questions.length > 0 && (
-                <div className="active-question-box">
-                  <div className="question-topic-pill">Topic: {activeTest.questions[currentIdx].topic}</div>
-                  <h3 className="active-question-text">{activeTest.questions[currentIdx].question}</h3>
-                  
-                  <div className="mcq-options-list">
-                    {activeTest.questions[currentIdx].options.map((opt, oIdx) => {
-                      const qid = activeTest.questions[currentIdx].id
-                      const isSelected = answers[qid] === opt
-                      return (
-                        <div
-                          key={oIdx}
-                          className={`mcq-option-item ${isSelected ? 'mcq-option--selected' : ''}`}
-                          onClick={() => handleSelectOption(qid, opt)}
-                        >
-                          <span className="option-indicator">{String.fromCharCode(65 + oIdx)}</span>
-                          <span className="option-text">{opt}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
+              <div className="question-box">
+                <p className="question-text">{activeTest.questions[currentIdx].question}</p>
+                <div className="options-grid">
+                  {activeTest.questions[currentIdx].options.map(opt => {
+                    const isSelected = answers[activeTest.questions[currentIdx].id] === opt
+                    return (
+                      <button
+                        key={opt}
+                        className={`btn btn-option ${isSelected ? 'selected' : ''}`}
+                        onClick={() => handleSelectOption(activeTest.questions[currentIdx].id, opt)}
+                      >
+                        {opt}
+                      </button>
+                    )
+                  })}
                 </div>
-              )}
+              </div>
 
-              <div className="test-footer-controls">
-                <button className="btn btn-secondary" onClick={prevQuestion} disabled={currentIdx === 0}>
-                  ← Previous
+              <div className="test-action-buttons">
+                <button
+                  className="btn btn-secondary"
+                  onClick={prevQuestion}
+                  disabled={currentIdx === 0}
+                >
+                  Previous
                 </button>
-                
                 {currentIdx < activeTest.questions.length - 1 ? (
-                  <button className="btn btn-primary" onClick={nextQuestion}>
-                    Next Question →
+                  <button
+                    className="btn btn-secondary"
+                    onClick={nextQuestion}
+                  >
+                    Next
                   </button>
                 ) : (
-                  <button className="btn btn-primary" onClick={submitTest} style={{ background: 'var(--accent-green)' }}>
-                    ✓ Submit Test
+                  <button
+                    className="btn btn-success"
+                    onClick={submitTest}
+                  >
+                    Submit Test
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* Test Results Screen */}
+          {/* Test Result Screen */}
           {testResult && (
-            <div className="test-results-view">
-              <div className="card result-summary-card">
-                <h1 className="result-score-hdr">{testResult.score}%</h1>
-                <h3 className="result-perf-label">{testResult.performance}</h3>
-                <p className="result-meta-summary">
-                  You scored <strong>{testResult.score}%</strong> in <strong>{testResult.category}</strong>.
-                </p>
-                <div className="alert alert-info" style={{ marginTop: 15, maxWidth: 500, marginInline: 'auto' }}>
-                  {testResult.feedback}
+            <div className="card result-card fade-in">
+              <div className="result-header">
+                <h2>Test Completed!</h2>
+                <p className="result-category">{testResult.category} Aptitude Assessment</p>
+              </div>
+
+              <div className="result-score-section">
+                <div className="result-score-circle">
+                  <span className="result-score-val">{testResult.score}%</span>
+                  <span className="result-score-lbl">Score</span>
                 </div>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 24 }}>
-                  <button className="btn btn-primary" onClick={() => setTestResult(null)}>
-                    Return to Lobby
-                  </button>
+                <div className="result-quick-stats">
+                  <p>Correct Answers: <strong>{testResult.correct} / {testResult.total}</strong></p>
+                  <p>Performance: <strong>{testResult.performance}</strong></p>
+                  <p>Time Taken: <strong>{formatTime(testResult.time_taken)}</strong></p>
                 </div>
               </div>
 
-              {/* Explanations Listing */}
-              <h3 className="review-title-hdr">Verify Answers</h3>
-              <div className="results-questions-list">
-                {testResult.results.map((q, idx) => (
-                  <div key={idx} className={`card result-q-card ${q.is_correct ? 'result-correct-card' : 'result-incorrect-card'}`}>
-                    <div className="result-q-card-header">
-                      <span className="q-badge-idx">Question {idx + 1}</span>
-                      <span className={`badge ${q.is_correct ? 'badge-green' : 'badge-red'}`}>
-                        {q.is_correct ? 'Correct' : 'Incorrect'}
-                      </span>
-                    </div>
-                    
-                    <h4 className="result-q-text">{q.question}</h4>
-                    
-                    <div className="result-q-answers">
-                      <div className="ans-row">
-                        <span>Your Answer:</span>
-                        <strong className={q.is_correct ? 'color-green' : 'color-red'}>{q.your_answer || "Unattempted"}</strong>
-                      </div>
-                      {!q.is_correct && (
-                        <div className="ans-row">
-                          <span>Correct Answer:</span>
-                          <strong className="color-green">{q.correct_answer}</strong>
-                        </div>
-                      )}
+              <div className="result-feedback-section">
+                <h3>AI Recommendation</h3>
+                <p className="result-feedback-text">{testResult.feedback}</p>
+                
+                {testResult.weak_topics.length > 0 && (
+                  <div className="topics-list-wrapper">
+                    <strong>Focus Areas (Weak Topics):</strong>
+                    <div className="tags-container">
+                      {testResult.weak_topics.map(t => <span key={t} className="tag tag-red">{t}</span>)}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {testResult.strong_topics.length > 0 && (
+                  <div className="topics-list-wrapper">
+                    <strong>Strengths (Strong Topics):</strong>
+                    <div className="tags-container">
+                      {testResult.strong_topics.map(t => <span key={t} className="tag tag-green">{t}</span>)}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              <button className="btn btn-primary" onClick={() => setTestResult(null)}>
+                Back to Lobby
+              </button>
             </div>
           )}
 
-        </div>
+    </div>
   )
 }

@@ -143,6 +143,10 @@ def get_dashboard():
     progress = ModuleProgress.query.filter_by(
         student_id=student_id
     ).first()
+    if not progress:
+        progress = ModuleProgress(student_id=student_id)
+        db.session.add(progress)
+        db.session.commit()
 
     # ── Resume Analysis ──
     resume = ResumeAnalysis.query.filter_by(
@@ -428,9 +432,78 @@ def get_dashboard():
     else:
         ai_confidence_label = "Low"
 
+    # ── Registered users count ──
+    total_students = Student.query.count()
+
+    # ── Prep Leaderboard data ──
+    all_students_progress = db.session.query(
+        Student,
+        ModuleProgress
+    ).join(
+        ModuleProgress, Student.id == ModuleProgress.student_id
+    ).all()
+    
+    leaderboard_data = []
+    for student_obj, prog in all_students_progress:
+        latest_interview = MockInterview.query.filter_by(student_id=student_obj.id).order_by(MockInterview.created_at.desc()).first()
+        any_done = any([
+            prog.resume_done,
+            prog.technical_done,
+            prog.aptitude_done,
+            prog.coding_done,
+            latest_interview is not None
+        ])
+        
+        if any_done:
+            p_resume = prog.resume_score or 0
+            p_tech = prog.technical_score or 0
+            p_apt = prog.aptitude_score or 0
+            p_coding = prog.coding_score or 0
+            p_mock = latest_interview.overall_score if latest_interview else 0
+            
+            p_cgpa = student_obj.cgpa or 0
+            p_projects = student_obj.projects_count or 0
+            p_certs = student_obj.certifications or 0
+            p_internships = student_obj.internships or 0
+            
+            inputs = {
+                "resume_score":           p_resume,
+                "ats_score":              p_resume,
+                "technical_score":        p_tech,
+                "aptitude_score":         p_apt,
+                "coding_score":           p_coding,
+                "mock_interview_score":   p_mock,
+                "projects_score":         min(p_projects * 15, 100),
+                "internships_score":      min(p_internships * 50, 100),
+                "certs_score":            min(p_certs * 15, 100),
+                "cgpa_score":             min(round((p_cgpa / 10.0) * 100), 100),
+                "skill_match_score":      p_resume,
+            }
+            ov_score = calculate_overall_score(inputs)
+            
+            leaderboard_data.append({
+                "id": student_obj.id,
+                "name": student_obj.name,
+                "score": ov_score
+            })
+            
+    leaderboard_data = sorted(leaderboard_data, key=lambda x: x["score"], reverse=True)
+    
+    leaderboard = []
+    for idx, item in enumerate(leaderboard_data):
+        leaderboard.append({
+            "rank": idx + 1,
+            "id": item["id"],
+            "name": item["name"],
+            "xp": item["score"], # Map overall score directly to XP points
+            "isUser": item["id"] == student_id
+        })
+
     # ── Build complete dashboard response ──
     return jsonify({
         "success": True,
+        "total_students": total_students,
+        "leaderboard": leaderboard,
 
         # Student info
         "student": {

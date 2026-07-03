@@ -338,3 +338,47 @@ def get_progress():
         "overall_aptitude_score": overall_aptitude_score,
         "all_attempted":         all(v["attempted"] for v in overall.values())
     }), 200
+
+
+# ─────────────────────────────────────────
+# GET /api/aptitude/leaderboard
+# Returns aptitude leaderboard sorted by highest score
+# ─────────────────────────────────────────
+@aptitude_bp.route("/leaderboard", methods=["GET"])
+def get_leaderboard():
+    student_id, error = verify_token(request)
+    if error:
+        return jsonify({"success": False, "message": error}), 401
+
+    from models import Student, Profile
+    
+    results = db.session.query(
+        Student.id,
+        Student.name,
+        Profile.department,
+        ModuleProgress.aptitude_score
+    ).join(
+        ModuleProgress, Student.id == ModuleProgress.student_id
+    ).outerjoin(
+        Profile, Student.id == Profile.student_id
+    ).filter(
+        ModuleProgress.aptitude_done == True
+    ).order_by(
+        ModuleProgress.aptitude_score.desc()
+    ).all()
+
+    leaderboard = []
+    for idx, row in enumerate(results):
+        leaderboard.append({
+            "rank": idx + 1,
+            "id": row.id,
+            "name": row.name,
+            "score": row.aptitude_score or 0,
+            "branch": row.department or "General",
+            "isUser": row.id == student_id
+        })
+
+    return jsonify({
+        "success": True,
+        "leaderboard": leaderboard
+    }), 200

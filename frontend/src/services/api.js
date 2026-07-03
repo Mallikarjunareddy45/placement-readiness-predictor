@@ -20,6 +20,11 @@ export const resetPasswordAPI = (data) => API.post('/auth/reset-password', data)
 // Profile
 export const getProfileAPI    = ()     => API.get('/profile/me')
 export const updateProfileAPI = (data) => API.put('/profile/update', data)
+export const uploadPhotoAPI   = (formData) => API.post('/profile/upload-photo', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+})
+export const getPhotoAPI      = ()     => API.get('/profile/photo')
+export const deletePhotoAPI   = ()     => API.delete('/profile/photo')
 
 // Dashboard
 export const getDashboardAPI   = ()  => API.get('/dashboard/')
@@ -41,11 +46,12 @@ export const submitTechTestAPI  = (data)    => API.post('/technical/submit', dat
 export const getTechHistoryAPI  = ()        => API.get('/technical/history')
 
 // Aptitude
-export const getAptCategoriesAPI = ()          => API.get('/aptitude/categories')
-export const startAptTestAPI     = (category)  => API.get(`/aptitude/start/${category}`)
-export const submitAptTestAPI    = (data)      => API.post('/aptitude/submit', data)
-export const getAptHistoryAPI    = ()          => API.get('/aptitude/history')
-export const getAptProgressAPI   = ()          => API.get('/aptitude/progress')
+export const getAptCategoriesAPI   = ()          => API.get('/aptitude/categories')
+export const startAptTestAPI       = (category)  => API.get(`/aptitude/start/${category}`)
+export const submitAptTestAPI      = (data)      => API.post('/aptitude/submit', data)
+export const getAptHistoryAPI      = ()          => API.get('/aptitude/history')
+export const getAptProgressAPI     = ()          => API.get('/aptitude/progress')
+export const getAptitudeLeaderboardAPI = ()      => API.get('/aptitude/leaderboard')
 
 // Prediction
 export const predictAPI = (data) => API.post('/predict', data)

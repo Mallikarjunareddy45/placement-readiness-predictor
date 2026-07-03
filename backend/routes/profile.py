@@ -258,7 +258,7 @@ def update_profile():
             "phone":           prof.phone,
             "languages":       prof.languages,
             "portfolio":       prof.portfolio,
-            "photo_url":       prof.photo_url,
+            "photo_url":       prof.photo_url or "https://api.dicebear.com/7.x/bottts/svg?seed=" + student.name,
             "skills":          skills,
             "projects_list":   projects,
             "certs_list":      certs
@@ -268,4 +268,144 @@ def update_profile():
             "profile_done":  core_filled,
             "missing_fields": [k for k, v in fields.items() if not v]
         }
+    }), 200
+
+
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
+
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads", "profile_photos")
+
+# Helper to check allowed extensions
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+ALLOWED_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
+
+def allowed_file(filename, mime_type):
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    return ext in ALLOWED_EXTENSIONS and mime_type in ALLOWED_MIME_TYPES
+
+# ─────────────────────────────────────────
+# GET /api/profile/uploads/profile_photos/<filename>
+# Serves profile photo static files securely
+# ─────────────────────────────────────────
+@profile_bp.route("/uploads/profile_photos/<filename>", methods=["GET"])
+def serve_profile_photo(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+
+# ─────────────────────────────────────────
+# POST /api/profile/upload-photo
+# Uploads a profile picture and saves path in DB
+# ─────────────────────────────────────────
+@profile_bp.route("/upload-photo", methods=["POST"])
+def upload_photo():
+    student_id, error = verify_token(request)
+    if error:
+        return jsonify({"success": False, "message": error}), 401
+
+    if "photo" not in request.files:
+        return jsonify({"success": False, "message": "No file uploaded."}), 400
+
+    file = request.files["photo"]
+    if file.filename == "":
+        return jsonify({"success": False, "message": "No file selected."}), 400
+
+    # Validate size (max 5 MB)
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0) # reset pointer
+
+    if size > 5 * 1024 * 1024:
+        return jsonify({"success": False, "message": "Image size exceeds 5 MB limit."}), 400
+
+    # Validate MIME type and extension
+    mime_type = file.content_type
+    if not allowed_file(file.filename, mime_type):
+        return jsonify({"success": False, "message": "Invalid file type. Only PNG, JPG, JPEG, and WEBP images are allowed."}), 400
+
+    # Make target directory
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+
+    # Save with a secure unique filename keyed by student id to prevent duplication/injections
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "png"
+    filename = f"photo_{student_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
+
+    # Save relative URL path to profile table
+    prof = Profile.query.filter_by(student_id=student_id).first()
+    if not prof:
+        prof = Profile(student_id=student_id)
+        db.session.add(prof)
+
+    # Delete older image from disk if it exists
+    if prof.photo_url and prof.photo_url.startswith("/api/profile/uploads/profile_photos/"):
+        old_filename = prof.photo_url.split("/")[-1]
+        old_filepath = os.path.join(UPLOAD_FOLDER, old_filename)
+        if os.path.exists(old_filepath):
+            try:
+                os.remove(old_filepath)
+            except Exception:
+                pass
+
+    prof.photo_url = f"/api/profile/uploads/profile_photos/{filename}"
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "photo_url": prof.photo_url,
+        "message": "Profile picture updated successfully."
+    }), 200
+
+
+# ─────────────────────────────────────────
+# GET /api/profile/photo
+# Returns the student's profile photo
+# ─────────────────────────────────────────
+@profile_bp.route("/photo", methods=["GET"])
+def get_photo():
+    student_id, error = verify_token(request)
+    if error:
+        return jsonify({"success": False, "message": error}), 401
+
+    student = Student.query.get(student_id)
+    prof = Profile.query.filter_by(student_id=student_id).first()
+    default_avatar = f"https://api.dicebear.com/7.x/bottts/svg?seed={student.name if student else 'default'}"
+    
+    return jsonify({
+        "success": True,
+        "photo_url": prof.photo_url if (prof and prof.photo_url) else default_avatar
+    }), 200
+
+
+# ─────────────────────────────────────────
+# DELETE /api/profile/photo
+# Deletes the profile photo and restores default avatar
+# ─────────────────────────────────────────
+@profile_bp.route("/photo", methods=["DELETE"])
+def delete_photo():
+    student_id, error = verify_token(request)
+    if error:
+        return jsonify({"success": False, "message": error}), 401
+
+    prof = Profile.query.filter_by(student_id=student_id).first()
+    if prof and prof.photo_url:
+        # Delete image from disk if it's stored locally
+        if prof.photo_url.startswith("/api/profile/uploads/profile_photos/"):
+            filename = prof.photo_url.split("/")[-1]
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except Exception:
+                    pass
+        prof.photo_url = None
+        db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Profile photo removed successfully."
     }), 200
