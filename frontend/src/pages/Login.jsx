@@ -118,8 +118,20 @@ export default function Login() {
         navigate('/dashboard')
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please verify credentials.')
-      addToast(err.response?.data?.message || 'Verification credentials incorrect.', 'error')
+      let errMsg = 'Login failed. Please verify credentials.'
+      if (err.message === 'Network Error') {
+        errMsg = 'Network error: Server is unreachable. Please verify your internet connection or if the backend API is running.'
+      } else if (err.response) {
+        if (err.response.status === 404) {
+          errMsg = 'Authentication endpoint not found (404). Check API deployment.'
+        } else if (err.response.status === 500) {
+          errMsg = 'Internal Server Error (500). Please try again later.'
+        } else if (err.response.data?.message) {
+          errMsg = err.response.data.message
+        }
+      }
+      setError(errMsg)
+      addToast(errMsg, 'error')
     } finally {
       setLoading(false)
     }

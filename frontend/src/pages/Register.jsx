@@ -115,8 +115,20 @@ export default function Register() {
       addToast("Account created successfully! Redirecting...", "success")
       setTimeout(() => navigate('/profile'), 1200)
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.')
-      addToast(err.response?.data?.message || 'Registration failed.', 'error')
+      let errMsg = 'Registration failed. Please try again.'
+      if (err.message === 'Network Error') {
+        errMsg = 'Network error: Server is unreachable. Please verify your internet connection or if the backend API is running.'
+      } else if (err.response) {
+        if (err.response.status === 404) {
+          errMsg = 'Registration endpoint not found (404). Check API deployment.'
+        } else if (err.response.status === 500) {
+          errMsg = 'Internal Server Error (500). Please try again later.'
+        } else if (err.response.data?.message) {
+          errMsg = err.response.data.message
+        }
+      }
+      setError(errMsg)
+      addToast(errMsg, 'error')
     } finally {
       setLoading(false)
     }

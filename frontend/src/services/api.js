@@ -11,13 +11,40 @@ API.interceptors.request.use(config => {
   return config
 })
 
+// Helper to construct absolute auth paths for production to prevent relative path fallbacks
+const getAuthUrl = (path) => {
+  const rawBase = import.meta.env.VITE_API_URL;
+  if (rawBase) {
+    const baseClean = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+    if (baseClean.endsWith('/auth')) {
+      return `${baseClean}${path}`;
+    }
+    return `${baseClean}/auth${path}`;
+  }
+  return `/api/auth${path}`;
+};
+
+// Helper for admin authentication paths
+const getAdminUrl = (path) => {
+  const rawBase = import.meta.env.VITE_API_URL;
+  if (rawBase) {
+    const baseClean = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+    if (baseClean.endsWith('/auth')) {
+      const apiBase = baseClean.slice(0, -5); // strip '/auth'
+      return `${apiBase}/admin${path}`;
+    }
+    return `${baseClean}/admin${path}`;
+  }
+  return `/api/admin${path}`;
+};
+
 // Auth
-export const registerAPI      = (data) => API.post('/auth/register', data)
-export const loginAPI         = (data) => API.post('/auth/login', data)
-export const socialLoginAPI   = (data) => API.post('/auth/social-login', data)
-export const forgotPasswordAPI = (data) => API.post('/auth/forgot-password', data)
-export const verifyOtpAPI     = (data) => API.post('/auth/verify-otp', data)
-export const resetPasswordAPI = (data) => API.post('/auth/reset-password', data)
+export const registerAPI       = (data) => API.post(getAuthUrl('/register'), data)
+export const loginAPI          = (data) => API.post(getAuthUrl('/login'), data)
+export const socialLoginAPI    = (data) => API.post(getAuthUrl('/social-login'), data)
+export const forgotPasswordAPI  = (data) => API.post(getAuthUrl('/forgot-password'), data)
+export const verifyOtpAPI      = (data) => API.post(getAuthUrl('/verify-otp'), data)
+export const resetPasswordAPI  = (data) => API.post(getAuthUrl('/reset-password'), data)
 
 // Profile
 export const getProfileAPI    = ()     => API.get('/profile/me')
@@ -87,7 +114,7 @@ export const getPredictionReportAPI  = ()      => API.get('/reports/prediction')
 export const getCodingReportAPI      = ()      => API.get('/reports/coding')
 
 // Admin Panel
-export const adminLoginAPI     = (data)       => API.post('/admin/login', data)
+export const adminLoginAPI     = (data)       => API.post(getAdminUrl('/login'), data)
 export const getAdminAnalyticsAPI = ()         => API.get('/admin/analytics')
 export const getAdminStudentsAPI  = ()         => API.get('/admin/students')
 export const getAdminQuestionsAPI = ()         => API.get('/admin/questions-summary')
