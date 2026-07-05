@@ -1,7 +1,21 @@
-import axios from 'axios'
+// Helper to construct correct base API URLs dynamically from VITE_API_URL config
+const getCleanApiBase = () => {
+  const rawBase = import.meta.env.VITE_API_URL;
+  if (rawBase) {
+    let clean = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+    if (clean.endsWith('/auth')) {
+      clean = clean.slice(0, -5);
+    }
+    if (!clean.endsWith('/api')) {
+      clean = `${clean}/api`;
+    }
+    return clean;
+  }
+  return '/api';
+};
 
 const API = axios.create({ 
-  baseURL: import.meta.env.VITE_API_URL || '/api' 
+  baseURL: getCleanApiBase() 
 })
 
 // Auto-attach JWT token to every request
@@ -13,29 +27,21 @@ API.interceptors.request.use(config => {
 
 // Helper to construct absolute auth paths for production to prevent relative path fallbacks
 const getAuthUrl = (path) => {
-  const rawBase = import.meta.env.VITE_API_URL;
-  if (rawBase) {
-    const baseClean = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
-    if (baseClean.endsWith('/auth')) {
-      return `${baseClean}${path}`;
-    }
-    return `${baseClean}/auth${path}`;
+  const apiBase = getCleanApiBase();
+  if (apiBase.endsWith('/auth')) {
+    return `${apiBase}${path}`;
   }
-  return `/api/auth${path}`;
+  return `${apiBase}/auth${path}`;
 };
 
 // Helper for admin authentication paths
 const getAdminUrl = (path) => {
-  const rawBase = import.meta.env.VITE_API_URL;
-  if (rawBase) {
-    const baseClean = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
-    if (baseClean.endsWith('/auth')) {
-      const apiBase = baseClean.slice(0, -5); // strip '/auth'
-      return `${apiBase}/admin${path}`;
-    }
-    return `${baseClean}/admin${path}`;
+  const apiBase = getCleanApiBase();
+  if (apiBase.endsWith('/auth')) {
+    const base = apiBase.slice(0, -5); // strip '/auth'
+    return `${base}/admin${path}`;
   }
-  return `/api/admin${path}`;
+  return `${apiBase}/admin${path}`;
 };
 
 // Auth

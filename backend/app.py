@@ -40,6 +40,15 @@ app.register_blueprint(reports_bp,    url_prefix="/api/reports")
 # ── Database Migration & Self-Healing Startup Hook ──
 # Runs on both direct invocation and when imported by production WSGI servers like gunicorn
 with app.app_context():
+    # Print all registered routes at startup for production visibility
+    try:
+        print("\n--- Registered Routes ---")
+        for rule in app.url_map.iter_rules():
+            print(f"Endpoint: {rule.endpoint} | Route: {rule.rule}")
+        print("-------------------------\n")
+    except Exception as re:
+        print(f"[WARNING] Route printing failed: {re}")
+
     # 1. Create tables if they do not exist
     db.create_all()
     
