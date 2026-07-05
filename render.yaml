@@ -12,12 +12,13 @@ services:
         destination: /index.html
 
   # Backend Web Service
-  - type: web
-    name: placement-readiness-predictor-backend
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn backend.app:app
-    root: .
-    envVars:
-      - key: PORT
-        value: 10000
+- type: web
+  name: placement-readiness-predictor-backend
+  env: python
+  runtime: python-3.11.10
+  buildCommand: pip install -r requirements.txt
+  startCommand: gunicorn backend.app:app
+  root: .
+  envVars:
+    - key: PORT
+      value: 10000
