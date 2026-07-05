@@ -267,6 +267,15 @@ export default function Resume() {
 
             {/* Top Row actions */}
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginBottom: 16 }}>
+              <a 
+                href={`${import.meta.env.VITE_API_URL || (window.location.origin + '/api')}/resume/file?token=${encodeURIComponent(localStorage.getItem('prp_token'))}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="btn btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', fontSize: 13 }}
+              >
+                <FileText size={14} /> View Uploaded Resume
+              </a>
               <button className="btn btn-secondary" onClick={downloadReport}><Download size={14} /> Download ATS Report</button>
               <button className="btn btn-primary" onClick={() => setAnalysis(null)}><RefreshCw size={14} /> Re-Upload Resume</button>
             </div>

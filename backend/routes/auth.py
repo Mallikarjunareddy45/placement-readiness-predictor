@@ -31,10 +31,16 @@ def generate_token(student_id):
 # ─────────────────────────────────────────
 def verify_token(request):
     auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    else:
+        # Fallback to query string parameter token
+        token = request.args.get("token", "")
+
+    if not token:
         return None, "Missing or invalid token"
 
-    token = auth_header.split(" ")[1]
     try:
         payload = jwt.decode(
             token,

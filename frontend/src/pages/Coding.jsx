@@ -456,6 +456,13 @@ export default function Coding() {
             ⚠️ <strong>Crucial Instruction:</strong> This is a single-attempt examination. Clicking <strong>Start Coding Test</strong> locks your session. Make sure you have uninterrupted internet connectivity and a quiet environment before initiating.
           </div>
 
+          {error && (
+            <div className="alert alert-error" style={{ marginBottom: 20, padding: 12, fontSize: 13, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-red)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+
           {!noResume ? (
             <button 
               className="btn btn-primary"

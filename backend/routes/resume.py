@@ -353,3 +353,24 @@ def download_resume_report():
         "success": True,
         "message": "Report generated. Please download via the reports blueprint route '/api/reports/resume'."
     }), 200
+
+# ─────────────────────────────────────────
+# GET /api/resume/file
+# Serves the actual uploaded PDF/DOCX file
+# ─────────────────────────────────────────
+@resume_bp.route("/file", methods=["GET"])
+def get_resume_file():
+    student_id, error = verify_token(request)
+    if error:
+        return jsonify({"success": False, "message": error}), 401
+
+    analysis = ResumeAnalysis.query.filter_by(student_id=student_id).order_by(ResumeAnalysis.created_at.desc()).first()
+    if not analysis:
+        return jsonify({"success": False, "message": "No resume uploaded."}), 404
+
+    saved_filename = secure_filename(f"student_{student_id}_{analysis.filename}")
+    filepath = os.path.join(UPLOAD_FOLDER, saved_filename)
+    if not os.path.exists(filepath):
+        return jsonify({"success": False, "message": "Resume file not found on server."}), 404
+
+    return send_file(filepath)
