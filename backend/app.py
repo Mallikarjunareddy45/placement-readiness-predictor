@@ -37,19 +37,54 @@ app.register_blueprint(admin_bp,      url_prefix="/api/admin")
 app.register_blueprint(reports_bp,    url_prefix="/api/reports")
 
 
+# ── Database Migration & Self-Healing Startup Hook ──
+# Runs on both direct invocation and when imported by production WSGI servers like gunicorn
+with app.app_context():
+    # 1. Create tables if they do not exist
+    db.create_all()
+    
+    # 2. Add missing columns dynamically to existing students table (Self-Healing Migrations)
+    try:
+        engine = db.engine
+        inspector = db.inspect(engine)
+        columns = [c['name'] for c in inspector.get_columns('students')]
+        
+        new_cols = {
+            "cgpa": "FLOAT",
+            "backlogs": "INTEGER DEFAULT 0",
+            "internships": "INTEGER DEFAULT 0",
+            "projects_count": "INTEGER DEFAULT 0",
+            "certifications": "INTEGER DEFAULT 0",
+            "college_tier": "INTEGER DEFAULT 3",
+            "project_complexity": "VARCHAR(50) DEFAULT 'Medium'",
+            "github_url": "VARCHAR(255)",
+            "linkedin_url": "VARCHAR(255)"
+        }
+        
+        for col_name, col_type in new_cols.items():
+            if col_name not in columns:
+                alter_query = f"ALTER TABLE students ADD COLUMN {col_name} {col_type}"
+                db.session.execute(db.text(alter_query))
+                print(f"[MIGRATION] Added column '{col_name}' to 'students' table.")
+        db.session.commit()
+    except Exception as e:
+        print(f"[MIGRATION WARNING] Alter table failed: {e}")
+        db.session.rollback()
+
+    # 3. Seed coding questions if empty
+    try:
+        from routes.coding import seed_coding_questions
+        seed_coding_questions()
+        print("[SUCCESS] Seeding coding questions completed.")
+    except Exception as se:
+        print(f"[WARNING] Seeding failed: {se}")
+    print("[SUCCESS] Database tables ready.")
+
+
 @app.route("/")
 def health_check():
     return jsonify({"message": "Placement Predictor Backend Running ✅"})
 
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-        try:
-            from routes.coding import seed_coding_questions
-            seed_coding_questions()
-            print("[SUCCESS] Seeding coding questions completed.")
-        except Exception as se:
-            print(f"[WARNING] Seeding failed: {se}")
-        print("[SUCCESS] Database tables ready.")
     app.run(debug=True, port=5000)
