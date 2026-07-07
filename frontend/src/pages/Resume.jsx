@@ -198,18 +198,32 @@ export default function Resume() {
         </div>
       )}
         
-        {/* Hero Section */}
-        <section className="predict-hero">
-          <div className="hero-badge">
-            <Sparkles size={12} className="hero-sparkle" />
-            <span>AI ATS Resume Optimizer</span>
+        {/* Animated Hero Banner */}
+        <section className="resume-hero-banner">
+          <div className="flowing-layer">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <span key={i} className="flowing-particle" style={{
+                left: `${(i * 5.5) + 2}%`,
+                animationDelay: `${i * 0.3}s`,
+                animationDuration: `${5 + (i % 4)}s`
+              }}>
+                {['</>', '{}', 'PDF', 'JS', 'SQL', 'ML', 'AI', 'CV', 'ATS', 'API', 'REST', 'GIT', 'AWS', 'JSON', 'CSS', 'HTML', 'Py', 'Node'][i % 18]}
+              </span>
+            ))}
           </div>
-          <h1 className="hero-title">
-            AI Resume <span className="text-gradient">Analyzer</span>
-          </h1>
-          <p className="hero-desc">
-            Upload your resume to audit grammar compliance, formatting score, and extract high-value placement keywords.
-          </p>
+          
+          <div className="hero-banner-content">
+            <div className="hero-badge">
+              <Sparkles size={12} className="hero-sparkle" />
+              <span>AI ATS Resume Optimizer</span>
+            </div>
+            <h1 className="hero-title">
+              AI Resume <span className="text-gradient">Analyzer</span>
+            </h1>
+            <p className="hero-desc">
+              Upload your resume to audit grammar compliance, formatting score, and extract high-value placement keywords.
+            </p>
+          </div>
         </section>
 
         {error && <div className="alert alert-error">{error}</div>}

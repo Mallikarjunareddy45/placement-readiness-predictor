@@ -5,6 +5,7 @@ from config       import Config
 from models       import db
 
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 app.config.from_object(Config)
 CORS(app)
 Bcrypt(app)

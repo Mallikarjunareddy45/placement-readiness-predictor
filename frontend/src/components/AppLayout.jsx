@@ -1,17 +1,29 @@
 import { useState, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, Navigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import Navbar from './Navbar'
 import CollapsibleSidebar from './CollapsibleSidebar'
 import { getNotificationsAPI, readNotificationAPI, clearNotificationsAPI } from '../services/api'
 
 export default function AppLayout() {
+  const { token, loading } = useAuth()
   const [showDrawer, setShowDrawer] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
 
+  if (loading) {
+    return <div className="page-loading"><div className="dash-loading-spinner" /></div>
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
   useEffect(() => {
-    fetchNotifications()
-  }, [])
+    if (token) {
+      fetchNotifications()
+    }
+  }, [token])
 
   const fetchNotifications = async () => {
     try {

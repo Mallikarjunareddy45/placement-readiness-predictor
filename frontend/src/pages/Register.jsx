@@ -10,8 +10,14 @@ export default function Register() {
   const [agree, setAgree] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, token } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (token) {
+      navigate('/dashboard')
+    }
+  }, [token, navigate])
 
   // 3D Perspective States
   const [tilt, setTilt] = useState({ x: 0, y: 0 })
@@ -119,12 +125,12 @@ export default function Register() {
       if (err.message === 'Network Error') {
         errMsg = 'Network error: Server is unreachable. Please verify your internet connection or if the backend API is running.'
       } else if (err.response) {
-        if (err.response.status === 404) {
+        if (err.response.data?.message) {
+          errMsg = err.response.data.message
+        } else if (err.response.status === 404) {
           errMsg = 'Registration endpoint not found (404). Check API deployment.'
         } else if (err.response.status === 500) {
           errMsg = 'Internal Server Error (500). Please try again later.'
-        } else if (err.response.data?.message) {
-          errMsg = err.response.data.message
         }
       }
       setError(errMsg)

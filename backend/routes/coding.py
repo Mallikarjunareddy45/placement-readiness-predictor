@@ -1324,7 +1324,6 @@ def complete_assessment():
 
     # Dynamic placement predictability trigger
     from routes.dashboard import get_label, get_label_color, calculate_overall_score
-    from routes.dashboard import compile_student_metrics # if available, or just fetch directly
     
     # We can invoke re-prediction calculation inline to keep prediction in sync!
     from models import ResumeAnalysis, TechnicalTest, AptitudeTest, MockInterview, PlacementPrediction

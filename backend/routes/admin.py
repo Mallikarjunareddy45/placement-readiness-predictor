@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models import db, Student, TechnicalTest, AptitudeTest, CodingTest, PlacementPrediction, MockInterview
-from routes.auth import generate_token
+from routes.auth import generate_token, verify_token
 import json
 import os
 
@@ -43,8 +43,8 @@ def admin_login():
 @admin_bp.route("/analytics", methods=["GET"])
 def get_analytics():
     # Verify token (must be admin, student_id = 9999)
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
+    student_id, error = verify_token(request)
+    if error or student_id != 9999:
         return jsonify({"success": False, "message": "Unauthorized admin access."}), 401
 
     total_students = Student.query.count()
@@ -91,6 +91,11 @@ def get_analytics():
 # ─────────────────────────────────────────
 @admin_bp.route("/students", methods=["GET"])
 def get_students():
+    # Verify token (must be admin, student_id = 9999)
+    student_id, error = verify_token(request)
+    if error or student_id != 9999:
+        return jsonify({"success": False, "message": "Unauthorized admin access."}), 401
+
     students = Student.query.all()
     students_list = []
     for s in students:

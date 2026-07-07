@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDashboardAPI } from '../services/api'
-import Navbar from '../components/Navbar'
-import CollapsibleSidebar from '../components/CollapsibleSidebar'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Radar,
@@ -624,12 +622,12 @@ export default function Dashboard() {
               </p>
             ) : (
               leaderboard.map(u => (
-                <div key={u.rank} className={`leaderboard-item ${u.isUser ? 'leaderboard-item--user' : ''}`} style={{ padding: 10 }}>
+                <div key={u.rank} className={`leaderboard-item ${u.is_logged_in_user ? 'leaderboard-item--user' : ''}`} style={{ padding: 10 }}>
                   <span className="leaderboard-rank">{u.rank}</span>
                   <div className="leaderboard-details">
                     <span className="leaderboard-name">{u.name}</span>
                   </div>
-                  <span className="leaderboard-score">{u.xp}%</span>
+                  <span className="leaderboard-score">{u.score}%</span>
                 </div>
               ))
             )}

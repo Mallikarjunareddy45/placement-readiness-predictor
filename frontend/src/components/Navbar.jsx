@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import './Navbar.css'
 
-export default function Navbar() {
+export default function Navbar({ unreadCount, onToggleNotification }) {
   const { student, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -98,9 +98,9 @@ export default function Navbar() {
         {/* Right Operations */}
         <div className="navbar-ops">
           {/* Bell Icon */}
-          <button className="navbar-op-btn notif-bell-btn" onClick={() => navigate('/dashboard')} title="Notifications">
+          <button className="navbar-op-btn notif-bell-btn" onClick={onToggleNotification} title="Notifications">
             <Bell size={18} />
-            <span className="badge-dot-indicator" />
+            {unreadCount > 0 && <span className="badge-dot-indicator">{unreadCount}</span>}
           </button>
 
           {/* Theme Toggle */}

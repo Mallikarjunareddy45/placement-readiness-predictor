@@ -222,7 +222,7 @@ export default function Aptitude() {
                       </div>
                     ) : (
                       leaderboard.map(u => (
-                        <div key={u.rank} className={`leaderboard-item ${u.isUser ? 'leaderboard-item--user' : ''}`}>
+                        <div key={u.rank} className={`leaderboard-item ${u.is_logged_in_user ? 'leaderboard-item--user' : ''}`}>
                           <span className="leaderboard-rank">{u.rank}</span>
                           <div className="leaderboard-details">
                             <span className="leaderboard-name">{u.name}</span>

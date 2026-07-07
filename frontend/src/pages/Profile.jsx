@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getProfileAPI, updateProfileAPI, uploadPhotoAPI, deletePhotoAPI } from '../services/api'
-import { Camera, Eye, Trash2, X, Image as ImageIcon } from 'lucide-react'
+import { Camera, Eye, Trash2, X, Image as ImageIcon, Phone, Globe, Mail, User, BookOpen, GraduationCap, Award, Briefcase, Code, Check } from 'lucide-react'
 import './Profile.css'
 
 const BRANCHES = [
@@ -17,6 +17,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [savingStatus, setSavingStatus] = useState('Saved') // Saved, Saving, Error
   const [activeTab, setActiveTab] = useState('academics') // academics, skills, projects, certs
+  const [showToast, setShowToast] = useState(false)
   
   // Tag input states
   const [newSkill, setNewSkill] = useState({ name: '', proficiency: 'Intermediate' })
@@ -74,11 +75,27 @@ export default function Profile() {
         const res = await updateProfileAPI(updatedForm)
         setProfile(res.data)
         setSavingStatus('Saved')
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
       } catch (err) {
         setSavingStatus('Error saving changes')
       }
     }, 1000) // debounce save by 1 second
   };
+
+  const handleManualSave = async () => {
+    if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current)
+    setSavingStatus('Saving...')
+    try {
+      const res = await updateProfileAPI(form)
+      setProfile(res.data)
+      setSavingStatus('Saved')
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 3000)
+    } catch (err) {
+      setSavingStatus('Error saving changes')
+    }
+  }
 
   const handleFieldChange = (key, val) => {
     const updated = { ...form, [key]: val }
@@ -334,7 +351,9 @@ export default function Profile() {
 
             <div className="profile-quick-details">
               <div className="input-group">
-                <label className="input-label">Phone Number</label>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Phone size={13} style={{ color: 'var(--accent-cyan)' }} /> Phone Number
+                </label>
                 <input
                   type="text"
                   className="input input-sm"
@@ -344,7 +363,9 @@ export default function Profile() {
                 />
               </div>
               <div className="input-group" style={{ marginTop: 12 }}>
-                <label className="input-label">Languages Known</label>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Globe size={13} style={{ color: 'var(--accent-cyan)' }} /> Languages Known
+                </label>
                 <input
                   type="text"
                   className="input input-sm"
@@ -354,7 +375,9 @@ export default function Profile() {
                 />
               </div>
               <div className="input-group" style={{ marginTop: 12 }}>
-                <label className="input-label">Portfolio Website</label>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Globe size={13} style={{ color: 'var(--accent-cyan)' }} /> Portfolio Website
+                </label>
                 <input
                   type="text"
                   className="input input-sm"
@@ -363,6 +386,16 @@ export default function Profile() {
                   onChange={e => handleFieldChange('portfolio', e.target.value)}
                 />
               </div>
+
+              {/* Manual Save Profile Button */}
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={handleManualSave}
+                style={{ width: '100%', marginTop: 20, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontWeight: 700 }}
+              >
+                {savingStatus === 'Saving...' ? 'Saving Profile...' : 'Save Profile'}
+              </button>
             </div>
           </div>
         </div>
@@ -392,7 +425,9 @@ export default function Profile() {
                 <h3 className="setup-card-title" style={{ marginBottom: 20 }}>Education Credentials</h3>
                 <div className="grid-2">
                   <div className="input-group">
-                    <label className="input-label">Full Name</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <User size={14} style={{ color: 'var(--accent-cyan)' }} /> Full Name
+                    </label>
                     <input
                       type="text"
                       className="input"
@@ -401,7 +436,9 @@ export default function Profile() {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Email Address</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Mail size={14} style={{ color: 'var(--accent-cyan)' }} /> Email Address
+                    </label>
                     <input
                       type="email"
                       className="input"
@@ -413,7 +450,9 @@ export default function Profile() {
 
                 <div className="grid-2" style={{ marginTop: 16 }}>
                   <div className="input-group">
-                    <label className="input-label">University / College</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <BookOpen size={14} style={{ color: 'var(--accent-cyan)' }} /> University / College
+                    </label>
                     <input
                       type="text"
                       className="input"
@@ -423,21 +462,24 @@ export default function Profile() {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Department / Branch</label>
-                    <select
-                      className="input select-glass"
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <GraduationCap size={14} style={{ color: 'var(--accent-cyan)' }} /> Department / Branch
+                    </label>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="e.g. Computer Science and Engineering"
                       value={form.branch || ''}
                       onChange={e => handleFieldChange('branch', e.target.value)}
-                    >
-                      <option value="">Select Branch</option>
-                      {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                    />
                   </div>
                 </div>
 
                 <div className="grid-2" style={{ marginTop: 16 }}>
                   <div className="input-group">
-                    <label className="input-label">Current CGPA</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Award size={14} style={{ color: 'var(--accent-cyan)' }} /> Current CGPA
+                    </label>
                     <input
                       type="number"
                       step="0.01"
@@ -450,7 +492,9 @@ export default function Profile() {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Graduation Year</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <GraduationCap size={14} style={{ color: 'var(--accent-cyan)' }} /> Graduation Year
+                    </label>
                     <input
                       type="number"
                       min="1990"
@@ -465,7 +509,9 @@ export default function Profile() {
 
                 <div className="grid-3" style={{ marginTop: 16 }}>
                   <div className="input-group">
-                    <label className="input-label">Total Internships</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Briefcase size={14} style={{ color: 'var(--accent-cyan)' }} /> Total Internships
+                    </label>
                     <input
                       type="number"
                       min="0"
@@ -475,7 +521,9 @@ export default function Profile() {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Academic Projects</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Code size={14} style={{ color: 'var(--accent-cyan)' }} /> Academic Projects
+                    </label>
                     <input
                       type="number"
                       min="0"
@@ -485,7 +533,9 @@ export default function Profile() {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Professional Certifications</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Award size={14} style={{ color: 'var(--accent-cyan)' }} /> Professional Certifications
+                    </label>
                     <input
                       type="number"
                       min="0"
@@ -498,7 +548,9 @@ export default function Profile() {
 
                 <div className="grid-2" style={{ marginTop: 16 }}>
                   <div className="input-group">
-                    <label className="input-label">GitHub URL</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Code size={14} style={{ color: 'var(--accent-cyan)' }} /> GitHub URL
+                    </label>
                     <input
                       type="text"
                       className="input"
@@ -508,7 +560,9 @@ export default function Profile() {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">LinkedIn Profile URL</label>
+                    <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Globe size={14} style={{ color: 'var(--accent-cyan)' }} /> LinkedIn Profile URL
+                    </label>
                     <input
                       type="text"
                       className="input"
@@ -742,6 +796,13 @@ export default function Profile() {
               className="photo-modal-img" 
             />
           </div>
+        </div>
+      )}
+
+      {/* Success Toast Notification */}
+      {showToast && (
+        <div className="toast-success-popup fade-in" style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000, background: 'var(--accent-green)', color: '#fff', padding: '12px 24px', borderRadius: 8, boxShadow: '0 4px 12px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
+          <Check size={16} /> Profile updated successfully! All ML features synchronized.
         </div>
       )}
 

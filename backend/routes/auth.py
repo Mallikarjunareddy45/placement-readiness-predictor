@@ -137,7 +137,14 @@ def login():
         }), 404
 
     # ── Verify password ──
-    if not bcrypt.check_password_hash(student.password, password):
+    is_correct = False
+    try:
+        is_correct = bcrypt.check_password_hash(student.password, password)
+    except ValueError:
+        # Fallback comparison for blank/plain legacy passwords
+        is_correct = (student.password == password and password != "")
+
+    if not is_correct:
         return jsonify({
             "success": False,
             "message": "Incorrect password."

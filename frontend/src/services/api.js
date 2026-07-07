@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 // Helper to construct correct base API URLs dynamically from VITE_API_URL config
 const getCleanApiBase = () => {
   const rawBase = import.meta.env.VITE_API_URL;
@@ -9,48 +11,32 @@ const getCleanApiBase = () => {
     if (!clean.endsWith('/api')) {
       clean = `${clean}/api`;
     }
-    return clean;
+    return `${clean}/`;
   }
-  return '/api';
+  return '/api/';
 };
 
 const API = axios.create({ 
   baseURL: getCleanApiBase() 
 })
 
-// Auto-attach JWT token to every request
+// Auto-attach JWT token to every request and normalize relative URLs
 API.interceptors.request.use(config => {
+  if (config.url && config.url.startsWith('/')) {
+    config.url = config.url.slice(1);
+  }
   const token = localStorage.getItem('prp_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Helper to construct absolute auth paths for production to prevent relative path fallbacks
-const getAuthUrl = (path) => {
-  const apiBase = getCleanApiBase();
-  if (apiBase.endsWith('/auth')) {
-    return `${apiBase}${path}`;
-  }
-  return `${apiBase}/auth${path}`;
-};
-
-// Helper for admin authentication paths
-const getAdminUrl = (path) => {
-  const apiBase = getCleanApiBase();
-  if (apiBase.endsWith('/auth')) {
-    const base = apiBase.slice(0, -5); // strip '/auth'
-    return `${base}/admin${path}`;
-  }
-  return `${apiBase}/admin${path}`;
-};
-
 // Auth
-export const registerAPI       = (data) => API.post(getAuthUrl('/register'), data)
-export const loginAPI          = (data) => API.post(getAuthUrl('/login'), data)
-export const socialLoginAPI    = (data) => API.post(getAuthUrl('/social-login'), data)
-export const forgotPasswordAPI  = (data) => API.post(getAuthUrl('/forgot-password'), data)
-export const verifyOtpAPI      = (data) => API.post(getAuthUrl('/verify-otp'), data)
-export const resetPasswordAPI  = (data) => API.post(getAuthUrl('/reset-password'), data)
+export const registerAPI       = (data) => API.post('/auth/register', data)
+export const loginAPI          = (data) => API.post('/auth/login', data)
+export const socialLoginAPI    = (data) => API.post('/auth/social-login', data)
+export const forgotPasswordAPI  = (data) => API.post('/auth/forgot-password', data)
+export const verifyOtpAPI      = (data) => API.post('/auth/verify-otp', data)
+export const resetPasswordAPI  = (data) => API.post('/auth/reset-password', data)
 
 // Profile
 export const getProfileAPI    = ()     => API.get('/profile/me')
@@ -120,7 +106,7 @@ export const getPredictionReportAPI  = ()      => API.get('/reports/prediction')
 export const getCodingReportAPI      = ()      => API.get('/reports/coding')
 
 // Admin Panel
-export const adminLoginAPI     = (data)       => API.post(getAdminUrl('/login'), data)
+export const adminLoginAPI     = (data)       => API.post('/admin/login', data)
 export const getAdminAnalyticsAPI = ()         => API.get('/admin/analytics')
 export const getAdminStudentsAPI  = ()         => API.get('/admin/students')
 export const getAdminQuestionsAPI = ()         => API.get('/admin/questions-summary')

@@ -8,7 +8,8 @@ import {
   submitAssessmentQuestionAPI,
   completeAssessmentAPI,
   getLatestResumeAPI,
-  getCodingReportAPI
+  getCodingReportAPI,
+  uploadResumeAPI
 } from '../services/api'
 import { 
   Play, 
@@ -25,6 +26,7 @@ import {
   Activity,
   Award,
   Zap,
+  RotateCcw,
   ArrowRight
 } from 'lucide-react'
 import './Coding.css'
@@ -34,6 +36,7 @@ export default function Coding() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [noResume, setNoResume] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [resumeSkills, setResumeSkills] = useState([])
   const [careerRole, setCareerRole] = useState('')
 
@@ -62,6 +65,62 @@ export default function Coding() {
 
   // Timer Ref
   const timerRef = useRef(null)
+
+  const uploadFile = async (file) => {
+    const ext = file.name.split('.').pop().toLowerCase()
+    if (ext !== 'pdf' && ext !== 'docx') {
+      setError('Please upload a PDF or DOCX file.')
+      return
+    }
+    setError('')
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('resume', file)
+
+    try {
+      const res = await uploadResumeAPI(formData)
+      if (res.data?.success) {
+        setNoResume(false)
+        await loadResumeDetails()
+      } else {
+        setError(res.data?.message || 'Resume parsing failed.')
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Resume parsing failed.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      uploadFile(e.target.files[0])
+    }
+  }
+
+  const handleRestartAssessment = async () => {
+    setReportData(null)
+    setAnswers({})
+    setCode('')
+    setQuestions([])
+    setSelectedProb(null)
+    setSelectedIdx(0)
+    setError('')
+    setFlowState('landing')
+    await startTestAttempt()
+  }
+
+  const formatReportTime = (totalSeconds) => {
+    const mins = Math.floor(totalSeconds / 60)
+    const secs = totalSeconds % 60
+    return `${mins}m ${secs}s`
+  }
+
+  const confirmCompleteAssessment = () => {
+    if (window.confirm("Are you sure you want to end and submit your coding assessment? This action cannot be undone.")) {
+      completeAssessment(false)
+    }
+  }
 
   useEffect(() => {
     fetchInitialStatus()
@@ -120,27 +179,28 @@ export default function Coding() {
   const loadResumeDetails = async () => {
     try {
       const res = await getLatestResumeAPI()
-      if (res.data?.success && res.data.data) {
-        const data = res.data.data
-        const skillsStr = data.detected_skills || ''
-        const skillsArr = skillsStr.split(',').map(s => s.trim()).filter(Boolean)
+      if (res.data?.success && res.data.detected_categorized) {
+        const skillsArr = Object.values(res.data.detected_categorized).flat()
         setResumeSkills(skillsArr.slice(0, 12))
 
-        const text = (data.extracted_text || '').toLowerCase()
-        if (text.includes('machine learning') || text.includes('ai/') || text.includes('data science')) {
-          setCareerRole('AI/ML & Data Science Specialist')
-        } else if (text.includes('full stack') || text.includes('fullstack')) {
-          setCareerRole('Full Stack Software Engineer')
-        } else if (text.includes('backend') || text.includes('django') || text.includes('spring boot')) {
-          setCareerRole('Backend Systems Developer')
-        } else {
-          setCareerRole('Frontend Interface Engineer')
+        let highestRole = 'Frontend Interface Engineer'
+        if (res.data.role_matches) {
+          let maxVal = -1
+          Object.entries(res.data.role_matches).forEach(([role, val]) => {
+            if (val > maxVal) {
+              maxVal = val
+              highestRole = role
+            }
+          })
         }
+        setCareerRole(highestRole)
+        setNoResume(false)
       } else {
         setNoResume(true)
       }
     } catch (err) {
       console.warn('Lobby resume query exception:', err)
+      setNoResume(true)
     }
   }
 
@@ -428,12 +488,19 @@ export default function Coding() {
               </h3>
               {noResume ? (
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', textAlign: 'center', padding: '10px 0' }}>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: 12, margin: 0 }}>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 12, margin: 0, marginBottom: 12 }}>
                     Please upload your resume to compile dynamic skills metadata.
                   </p>
-                  <button className="btn btn-primary btn-sm" onClick={() => navigate('/resume')} style={{ marginTop: 12 }}>
-                    Upload Resume
-                  </button>
+                  <label className="btn btn-primary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', justifyContent: 'center', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+                    {uploading ? 'Uploading...' : 'Upload Resume'}
+                    <input 
+                      type="file" 
+                      accept=".pdf,.docx" 
+                      onChange={handleFileChange} 
+                      style={{ display: 'none' }} 
+                      disabled={uploading}
+                    />
+                  </label>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -496,7 +563,20 @@ export default function Coding() {
           <h3 className="sidebar-hdr-title">Test Console</h3>
           
           <div style={{ padding: '0 16px 12px 16px', borderBottom: '1px solid var(--border)' }}>
-            <div className="coding-timer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 16, background: timeLeft < 300 ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.02)', padding: 8, borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', color: timeLeft < 300 ? 'var(--accent-red)' : 'var(--accent-cyan)', fontWeight: 700 }}>
+            <div className={`coding-timer ${timeLeft < 300 ? "animate-pulse" : ""}`} style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: 6, 
+              fontSize: 16, 
+              background: timeLeft < 300 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.02)', 
+              padding: 10, 
+              borderRadius: 8, 
+              border: timeLeft < 300 ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.05)', 
+              color: timeLeft < 300 ? 'var(--accent-red)' : 'var(--accent-cyan)', 
+              fontWeight: 800,
+              boxShadow: timeLeft < 300 ? '0 0 10px rgba(239,68,68,0.1)' : 'none'
+            }}>
               ⏱ {formatTime(timeLeft)}
             </div>
             
@@ -505,8 +585,8 @@ export default function Coding() {
                 <span>Solved Progress:</span>
                 <strong>{solvedCount} / 5</strong>
               </div>
-              <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                <div style={{ width: `${(solvedCount / 5) * 100}%`, height: '100%', background: 'var(--accent-green)', borderRadius: 2 }} />
+              <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.4)' }}>
+                <div style={{ width: `${(solvedCount / 5) * 100}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-green))', borderRadius: 3, transition: 'width 0.4s ease-in-out' }} />
               </div>
             </div>
           </div>
@@ -554,7 +634,7 @@ export default function Coding() {
           <div style={{ padding: 12 }}>
             <button 
               className="btn btn-primary"
-              onClick={() => completeAssessment(false)}
+              onClick={confirmCompleteAssessment}
               style={{ width: '100%', background: 'var(--accent-red)', padding: 10, fontSize: 12, fontWeight: 700 }}
             >
               End Assessment
@@ -779,11 +859,11 @@ export default function Coding() {
           </div>
 
           {/* Stats summary row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 20, marginBottom: 24 }}>
             <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 20, textAlign: 'center' }}>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Overall Coding Score</div>
               <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--accent-cyan)', marginTop: 8 }}>
-                {reportData.overall_score}%
+                <AnimatedScore target={reportData.overall_score} />
               </div>
             </div>
             <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 20, textAlign: 'center' }}>
@@ -796,6 +876,12 @@ export default function Coding() {
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Failed / Skips</div>
               <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--accent-red)', marginTop: 8 }}>
                 {reportData.failed_questions} / 5
+              </div>
+            </div>
+            <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 20, textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Time Taken</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--accent-amber)', marginTop: 8 }}>
+                {formatReportTime(reportData.time_taken_secs || 0)}
               </div>
             </div>
           </div>
@@ -897,6 +983,13 @@ export default function Coding() {
           </div>
 
           <div style={{ marginTop: 30, display: 'flex', justifyContent: 'center', gap: 12 }} className="print-hidden-btn">
+            <button 
+              className="btn btn-primary animate-pulse" 
+              onClick={handleRestartAssessment} 
+              style={{ padding: '10px 24px', background: 'var(--accent-green)', borderColor: 'var(--accent-green)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+            >
+              <RotateCcw size={16} /> Restart Assessment
+            </button>
             <button className="btn btn-secondary" onClick={() => navigate('/dashboard')} style={{ padding: '10px 24px' }}>
               Return to Dashboard
             </button>
@@ -911,4 +1004,24 @@ export default function Coding() {
   }
 
   return null
+}
+
+function AnimatedScore({ target }) {
+  const [current, setCurrent] = useState(0)
+  useEffect(() => {
+    let start = 0
+    const duration = 800
+    const stepTime = Math.abs(Math.floor(duration / (target || 1))) || 15
+    const timer = setInterval(() => {
+      start += 1
+      if (start >= target) {
+        setCurrent(target)
+        clearInterval(timer)
+      } else {
+        setCurrent(start)
+      }
+    }, stepTime)
+    return () => clearInterval(timer)
+  }, [target])
+  return <>{current}%</>
 }
