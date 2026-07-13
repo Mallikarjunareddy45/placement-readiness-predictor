@@ -16,11 +16,10 @@ services:
         value: production
 
   # Frontend Static Site hosting React+Vite app
-  - type: web
+  - type: static
     name: placement-readiness-frontend
-    runtime: static
     buildCommand: cd frontend && npm install && npm run build
-    publishPath: frontend/dist
+    publishDir: frontend/dist
     envVars:
       - key: VITE_API_URL
         fromService:
