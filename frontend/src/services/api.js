@@ -5,6 +5,9 @@ const getCleanApiBase = () => {
   const rawBase = import.meta.env.VITE_API_URL;
   if (rawBase) {
     let clean = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = `https://${clean}`;
+    }
     if (clean.endsWith('/auth')) {
       clean = clean.slice(0, -5);
     }
