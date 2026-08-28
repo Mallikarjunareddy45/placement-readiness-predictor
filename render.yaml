@@ -19,8 +19,9 @@ services:
         value: production
 
   # Frontend Static Site hosting React+Vite app (Render FREE Tier)
-  - type: static_site
+  - type: web
     name: placement-readiness-frontend
+    runtime: static
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
