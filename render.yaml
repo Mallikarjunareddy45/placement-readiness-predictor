@@ -1,10 +1,12 @@
 services:
-  # Backend Web Service running Flask API
+  # Backend Web Service running Flask API (Render FREE Tier)
   - type: web
     name: placement-readiness-backend
     runtime: python
+    plan: free
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && gunicorn app:app
+    healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
@@ -15,10 +17,11 @@ services:
       - key: FLASK_ENV
         value: production
 
-  # Frontend Static Site hosting React+Vite app
+  # Frontend Static Site hosting React+Vite app (Render FREE Tier)
   - type: web
     name: placement-readiness-frontend
     runtime: static
+    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
@@ -28,7 +31,7 @@ services:
           name: placement-readiness-backend
           property: host
     routes:
-      # Redirect all path routes to index.html for React Router compatibility (fixes 404 on refresh)
+      # Redirect all path routes to index.html for React Router SPA compatibility
       - type: rewrite
         source: /*
         destination: /index.html
