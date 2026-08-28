@@ -1,4 +1,6 @@
-import os, joblib, warnings
+import os, sys, joblib, warnings
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 import numpy as np
 import pandas as pd
 import matplotlib
